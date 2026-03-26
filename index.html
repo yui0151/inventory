@@ -1388,8 +1388,10 @@ function initSample(){
 }
 
 // ══ INIT ══
+var urlCode=new URLSearchParams(window.location.search).get('code');
 var savedRoom=localStorage.getItem('inv_last_room');
-if(savedRoom){document.getElementById('roomInput').value=savedRoom;roomCode=savedRoom;enterApp();}
+var autoRoom=urlCode||savedRoom;
+if(autoRoom){document.getElementById('roomInput').value=autoRoom;roomCode=autoRoom;localStorage.setItem('inv_last_room',autoRoom);enterApp();}
 </script>
 </body>
 </html>
