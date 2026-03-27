@@ -380,15 +380,16 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.6;}
 <div id="page-shop" class="content" style="display:none">
   <div class="sec">
     <div class="sec-hd"><span class="sec-dot"></span>兔兔自動提醒（庫存不足）</div>
+    <div style="font-size:11px;color:var(--muted);margin:-4px 0 8px;line-height:1.6;">✓ 打勾後輸入補了幾個 → 自動幫你加進庫存</div>
     <div id="autoList"></div>
   </div>
   <div class="sec">
     <div class="sec-hd"><span class="sec-dot"></span>隨手記 <span class="sc" id="manualCnt"></span></div>
     <div id="manualList"></div>
-    <div class="add-row">
-      <input class="add-in" id="todoIn" placeholder="新增待買項目…" onkeypress="if(event.key==='Enter')addTodo()">
-      <input class="add-qty-in" id="todoQtyIn" type="number" value="1" min="1" placeholder="數量">
-      <button class="add-btn" onclick="addTodo()">+</button>
+    <div style="display:flex;gap:6px;margin-top:8px;align-items:center;">
+      <input class="add-in" id="todoIn" placeholder="新增待買項目…" onkeypress="if(event.key==='Enter')addTodo()" style="flex:1;min-width:0;">
+      <input id="todoQtyIn" type="number" value="1" min="1" style="width:48px;padding:10px 6px;border:1.5px solid var(--latte);border-radius:12px;background:var(--cream);font-family:'Zen Kaku Gothic New',sans-serif;font-size:14px;color:var(--text);outline:none;text-align:center;flex-shrink:0;">
+      <button class="add-btn" onclick="addTodo()" style="flex-shrink:0;">+</button>
     </div>
   </div>
 </div>
@@ -450,7 +451,10 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.6;}
     <div class="stitle" id="addTitle">✨ 新增物品</div>
     <div class="fg" style="display:flex;flex-direction:column;align-items:center;gap:6px;">
       <label class="fl" style="align-self:flex-start">圖示</label>
-      <input class="ep-single" id="epIn" maxlength="4" placeholder="📦" oninput="handleEmojiInput(this.value)">
+      <div style="position:relative;display:inline-block;">
+        <input class="ep-single" id="epIn" maxlength="4" oninput="handleEmojiInput(this.value)" style="color:inherit;">
+        <span id="epPlaceholder" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:36px;opacity:0.3;pointer-events:none;">📦</span>
+      </div>
       <div class="ep-hint">點擊後輸入或貼上任何 emoji</div>
     </div>
     <div class="fg">
@@ -860,11 +864,13 @@ function renderShopping(){
     var html='';
     for(var i=0;i<lowItems.length;i++){
       var it=lowItems[i];var z=isZero(it);
-      html+='<div class="todo" style="'+(z?'border-color:#b07040;background:#f5e6d8':'')+'">'+
-        '<div class="chk'+(it._done?' on':'')+'" onclick="toggleAutoDone(\''+it.id+'\')"></div>'+
+      html+='<div class="todo" style="'+(z?'border-color:#b07040;background:#f5e6d8':'')+'" id="arow_'+it.id+'">'+
         '<div class="todo-txt"><b>'+(it.emoji||'📦')+' '+it.name+'</b> '+(z?'<b style="color:#b07040">（已清空！）</b>':'（剩 '+it.qty+' 個）')+'<br>'+
         '<span style="font-size:11px;color:var(--muted)">📍 '+(it.location||'未設定')+'</span></div>'+
-        '<button class="abtn ae" onclick="chgQty(\''+it.id+'\',5)" style="width:34px;font-size:11px;flex-shrink:0">+5</button></div>';
+        '<div style="display:flex;align-items:center;gap:5px;flex-shrink:0;">'+
+          '<input type="number" min="1" value="1" id="rqty_'+it.id+'" style="width:44px;padding:5px 4px;border:1.5px solid var(--latte);border-radius:8px;background:var(--cream);font-size:13px;text-align:center;outline:none;">'+
+          '<button onclick="confirmRestock(\''+it.id+'\')" style="padding:6px 10px;background:var(--gs);border:none;border-radius:8px;font-size:12px;color:#2d6a2d;font-weight:700;cursor:pointer;white-space:nowrap;">✓ 補貨</button>'+
+        '</div></div>';
     }
     autoEl.innerHTML=html;
   }
@@ -879,6 +885,19 @@ function renderShopping(){
   }
   document.getElementById('manualList').innerHTML=html2;
   document.getElementById('manualCnt').textContent='（'+p.length+' 項待購）';
+}
+
+function confirmRestock(id){
+  var qEl=document.getElementById('rqty_'+id);
+  var qty=qEl?parseInt(qEl.value)||1:1;
+  for(var i=0;i<items.length;i++){
+    if(items[i].id===id){
+      items[i].qty+=qty;
+      showToast('兔兔管家 🐰：「'+items[i].name+'」已補 '+qty+' 個，庫存更新囉！');
+      break;
+    }
+  }
+  saveData();
 }
 
 function updateCounts(){
@@ -1026,7 +1045,7 @@ function openAdd(){
   document.getElementById('iMemo').value='';
   document.getElementById('iQty').value=1;document.getElementById('iMin').value=0;
   ['iExp','iPrice','iRestock'].forEach(function(id){document.getElementById(id).value='';});
-  document.getElementById('epIn').value=selectedEmoji;
+  setEpDisplay('📦');
   resetPhotoUI('photoImg');fillSelects();
   document.getElementById('iLoc').value='';document.getElementById('iCat').value='';
   showOv('addOv');
@@ -1043,7 +1062,7 @@ function openEdit(id){
   document.getElementById('iExp').value=it.expiry||'';document.getElementById('iPrice').value=it.price||'';
   document.getElementById('iRestock').value=it.restockDate||'';
   document.getElementById('iMemo').value=(it.memo||it.notes||'');
-  document.getElementById('epIn').value=selectedEmoji;
+  setEpDisplay(selectedEmoji);
   fillSelects();document.getElementById('iLoc').value=it.location||'';document.getElementById('iCat').value=it.category||'';
   if(it.photo){document.getElementById('photoImg').src=it.photo;document.getElementById('photoImg').style.display='block';}
   else resetPhotoUI('photoImg');
@@ -1052,7 +1071,23 @@ function openEdit(id){
 
 function handleEmojiInput(val){
   var em=Array.from(val.trim())[0];
-  if(em){selectedEmoji=em;}
+  if(em){
+    selectedEmoji=em;
+    var ph=document.getElementById('epPlaceholder');
+    if(ph)ph.style.display='none';
+  }
+}
+function setEpDisplay(emoji){
+  var inp=document.getElementById('epIn');
+  var ph=document.getElementById('epPlaceholder');
+  if(!inp)return;
+  if(emoji&&emoji!=='📦'){
+    inp.value=emoji;
+    if(ph)ph.style.display='none';
+  }else{
+    inp.value='';
+    if(ph){ph.style.display='flex';ph.textContent='📦';}
+  }
 }
 
 function resetPhotoUI(imgId){var img=document.getElementById(imgId);if(img){img.style.display='none';img.src='';}}
@@ -1082,13 +1117,16 @@ function saveItem(){
   var name=document.getElementById('iName').value.trim();
   if(!name){showToast('兔兔管家 🐰：名稱不能空白喔！');return;}
   var qty=parseInt(document.getElementById('iQty').value);if(isNaN(qty)||qty<0)qty=0;
+  // Use whatever is in the emoji input, fallback to selectedEmoji, fallback to 📦
+  var epVal=document.getElementById('epIn').value.trim();
+  var finalEmoji=(epVal?Array.from(epVal)[0]:null)||selectedEmoji||'📦';
   var minS=parseInt(document.getElementById('iMin').value);if(isNaN(minS)||minS<0)minS=0;
   var newIt={
     name:name,location:document.getElementById('iLoc').value,category:document.getElementById('iCat').value,
     qty:qty,minStock:minS,expiry:document.getElementById('iExp').value,
     price:document.getElementById('iPrice').value,restockDate:document.getElementById('iRestock').value,
     notes:'',memo:document.getElementById('iMemo').value.trim(),
-    emoji:selectedEmoji,photo:uploadedPhoto,_done:false
+    emoji:finalEmoji,photo:uploadedPhoto,_done:false
   };
   if(editId){
     var idx=-1;for(var i=0;i<items.length;i++){if(items[i].id===editId){idx=i;break;}}
@@ -1370,6 +1408,9 @@ function switchTab(tab,el){
   document.getElementById('page-inv').style.display=tab==='inv'?'':'none';
   document.getElementById('page-shop').style.display=tab==='shop'?'':'none';
   document.getElementById('catBar').style.display=tab==='inv'?'':'none';
+  // FAB only shows on inventory tab
+  var fab=document.getElementById('fabBtn');
+  if(fab)fab.style.display=tab==='inv'?'':'none';
   if(tab==='shop')renderShopping();
 }
 function showOv(id){document.getElementById(id).classList.add('show');}
