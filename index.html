@@ -90,11 +90,12 @@ body{font-family:'Zen Kaku Gothic New',sans-serif;background:var(--milk);color:v
 .select-mode-btn{padding:6px 12px;border:1.5px solid var(--latte);border-radius:10px;background:var(--white);font-size:12px;color:var(--muted);cursor:pointer;flex-shrink:0;}
 .select-mode-btn.on{background:var(--deep);border-color:var(--deep);color:var(--cream);}
 
-/* Sort buttons */
-.sort-btns{display:flex;flex-direction:column;gap:2px;flex-shrink:0;}
-.sort-b{width:22px;height:20px;border:1px solid var(--latte);border-radius:5px;background:var(--cream);color:var(--muted);font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}
-.sort-b:active{background:var(--latte);}
-.sort-b:disabled{opacity:0.3;cursor:default;}
+/* Sort - touch drag */
+.sort-btns{display:none;}/* hidden - using touch drag instead */
+.drag-handle{font-size:18px;color:var(--latte);cursor:grab;padding:2px 6px;flex-shrink:0;user-select:none;touch-action:none;}
+.sp-item.dragging{opacity:0.4;}
+.sp-item.drag-over-top{border-top:2px solid var(--caramel);}
+.sp-item.drag-over-bot{border-bottom:2px solid var(--caramel);}
 
 /* LOC emoji */
 .loc-emoji-btn{width:32px;height:32px;border:1.5px solid var(--latte);border-radius:8px;background:var(--cream);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
@@ -424,12 +425,12 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.6;}
       <label class="fl">圖示</label>
       <div class="ep-grid" id="epGrid"></div>
       <div class="ep-add-row">
-        <input class="ep-in" id="epIn" placeholder="貼上自訂 emoji" maxlength="4">
-        <button class="ep-add-btn" onclick="addCustomEmoji()">＋ 加入</button>
+        <input class="ep-in" id="epIn" placeholder="自訂 emoji（貼上）" maxlength="4">
+        <button class="ep-add-btn" onclick="addCustomEmoji()">＋</button>
       </div>
     </div>
     <div class="fg">
-      <label class="fl">物品照片（選填，自動裁成正方形）</label>
+      <label class="fl">物品照片（選填）</label>
       <div class="photo-area" id="photoArea" onclick="document.getElementById('photoIn').click()">
         <span style="font-size:28px">📷</span><span>點擊上傳照片</span>
         <img id="photoImg" style="display:none" alt="">
@@ -444,18 +445,18 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.6;}
     </div>
     <div class="frow">
       <div class="fg"><label class="fl">目前數量</label><input class="fi" type="number" id="iQty" value="1" min="0"></div>
-      <div class="fg"><label class="fl">補貨警示（低於幾個）</label><input class="fi" type="number" id="iMin" value="1" min="0"></div>
+      <div class="fg">
+        <label class="fl">補貨警示</label>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:4px;">填 0 = 清空才買</div>
+        <input class="fi" type="number" id="iMin" value="0" min="0">
+      </div>
     </div>
     <div class="frow">
       <div class="fg"><label class="fl">到期日（選填）</label><input class="fi" type="date" id="iExp"></div>
-      <div class="fg"><label class="fl">購買價格（選填）</label><input class="fi" type="number" id="iPrice" placeholder="NT$" min="0"></div>
+      <div class="fg"><label class="fl">購買價格（NT$，選填）</label><input class="fi" type="number" id="iPrice" placeholder="例：299" min="0"></div>
     </div>
-    <div class="frow">
-      <div class="fg"><label class="fl">上次補貨日（選填）</label><input class="fi" type="date" id="iRestock"></div>
-      <div class="fg"></div>
-    </div>
-    <div class="fg"><label class="fl">備註說明（選填）</label><input class="fi" id="iNotes" placeholder="例：只買好市多大包裝"></div>
-    <div class="fg"><label class="fl">🥕 兔兔管家備忘錄（選填）</label><textarea class="fi" id="iMemo" placeholder="例：好市多比較便宜、這牌子寶寶比較喜歡…"></textarea></div>
+    <div class="fg"><label class="fl">上次補貨日（選填）</label><input class="fi" type="date" id="iRestock"></div>
+    <div class="fg"><label class="fl">🥕 備忘錄（選填）</label><textarea class="fi" id="iMemo" placeholder="例：好市多比較便宜、M號、這牌子寶寶比較喜歡…"></textarea></div>
     <div class="brow">
       <button class="btn btn-s" onclick="closeOv('addOv')">取消</button>
       <button class="btn btn-p" onclick="saveItem()">儲存</button>
@@ -717,10 +718,22 @@ function renderGreeting(){
 function saveData(){saveLocal();pushData();renderAll();}
 
 // ══ STATUS HELPERS ══
-function needsBuy(it){return it.qty<=(it.minStock||1)||it.qty===0;}
+function needsBuy(it){
+  var ms=(it.minStock===undefined||it.minStock===null)?0:it.minStock;
+  if(ms===0)return it.qty===0;
+  return it.qty<=ms;
+}
 function isZero(it){return it.qty===0;}
-function isVeryLow(it){return it.qty===1&&it.qty<=(it.minStock||1);}
-function isLow(it){return it.qty<=(it.minStock||1)&&it.qty>1;}
+function isVeryLow(it){
+  var ms=(it.minStock===undefined||it.minStock===null)?0:it.minStock;
+  if(ms===0)return false;
+  return it.qty===1&&it.qty<=ms;
+}
+function isLow(it){
+  var ms=(it.minStock===undefined||it.minStock===null)?0:it.minStock;
+  if(ms===0)return it.qty===0;
+  return it.qty<=ms&&it.qty>1;
+}
 
 // ══ RENDER ALL ══
 function renderAll(){
@@ -987,9 +1000,9 @@ function chgQtyDet(id,delta){
 function openAdd(){
   editId=null;selectedEmoji='📦';uploadedPhoto=null;
   document.getElementById('addTitle').textContent='✨ 新增物品';
-  ['iName','iNotes'].forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('iName').value='';
   document.getElementById('iMemo').value='';
-  document.getElementById('iQty').value=1;document.getElementById('iMin').value=1;
+  document.getElementById('iQty').value=1;document.getElementById('iMin').value=0;
   ['iExp','iPrice','iRestock','epIn'].forEach(function(id){document.getElementById(id).value='';});
   resetPhotoUI('photoImg');fillSelects();
   document.getElementById('iLoc').value='';document.getElementById('iCat').value='';
@@ -1002,10 +1015,11 @@ function openEdit(id){
   editId=id;selectedEmoji=it.emoji||'📦';uploadedPhoto=it.photo||null;
   document.getElementById('addTitle').textContent='✏️ 編輯物品';
   document.getElementById('iName').value=it.name||'';
-  document.getElementById('iQty').value=it.qty||0;document.getElementById('iMin').value=it.minStock||1;
+  document.getElementById('iQty').value=it.qty||0;
+  document.getElementById('iMin').value=(it.minStock===undefined||it.minStock===null)?0:it.minStock;
   document.getElementById('iExp').value=it.expiry||'';document.getElementById('iPrice').value=it.price||'';
   document.getElementById('iRestock').value=it.restockDate||'';
-  document.getElementById('iNotes').value=it.notes||'';document.getElementById('iMemo').value=it.memo||'';
+  document.getElementById('iMemo').value=(it.memo||it.notes||'');
   document.getElementById('epIn').value='';
   fillSelects();document.getElementById('iLoc').value=it.location||'';document.getElementById('iCat').value=it.category||'';
   if(it.photo){document.getElementById('photoImg').src=it.photo;document.getElementById('photoImg').style.display='block';}
@@ -1052,12 +1066,12 @@ function saveItem(){
   var name=document.getElementById('iName').value.trim();
   if(!name){showToast('兔兔管家 🐰：名稱不能空白喔！');return;}
   var qty=parseInt(document.getElementById('iQty').value);if(isNaN(qty)||qty<0)qty=0;
-  var minS=parseInt(document.getElementById('iMin').value);if(isNaN(minS)||minS<0)minS=1;
+  var minS=parseInt(document.getElementById('iMin').value);if(isNaN(minS)||minS<0)minS=0;
   var newIt={
     name:name,location:document.getElementById('iLoc').value,category:document.getElementById('iCat').value,
     qty:qty,minStock:minS,expiry:document.getElementById('iExp').value,
     price:document.getElementById('iPrice').value,restockDate:document.getElementById('iRestock').value,
-    notes:document.getElementById('iNotes').value.trim(),memo:document.getElementById('iMemo').value.trim(),
+    notes:'',memo:document.getElementById('iMemo').value.trim(),
     emoji:selectedEmoji,photo:uploadedPhoto,_done:false
   };
   if(editId){
@@ -1122,14 +1136,11 @@ function refreshSP(){
     var loc=locations[i];
     var meta=locMeta[loc]||{};
     var emoji=meta.emoji||'📍';
-    h+='<div class="sp-item">'+
-      '<div class="sort-btns">'+
-        '<button class="sort-b" onclick="moveItem(\'loc\','+i+',-1)" '+(i===0?'disabled':'')+'>▲</button>'+
-        '<button class="sort-b" onclick="moveItem(\'loc\','+i+',1)" '+(i===locations.length-1?'disabled':'')+'>▼</button>'+
-      '</div>'+
+    h+='<div class="sp-item" data-type="loc" data-idx="'+i+'">'+
+      '<span class="drag-handle" onmousedown="startDrag(event,\'loc\','+i+')" ontouchstart="startDrag(event,\'loc\','+i+')" >☰</span>'+
       '<div class="loc-emoji-disp" onclick="openLocEmoji('+i+')">'+emoji+'</div>'+
       '<div class="sp-item-txt">'+loc+'</div>'+
-      '<button class="loc-detail-btn" onclick="openLocPhoto('+i+')" title="查看/上傳示意圖">🖼</button>'+
+      '<button class="loc-detail-btn" onclick="openLocPhoto('+i+')" title="示意圖">🖼</button>'+
       '<button class="edt-b" onclick="startTag(\'loc\','+i+')">✏️</button>'+
       '<button class="del-b" onclick="delLoc('+i+')">✕</button></div>';
   }
@@ -1142,11 +1153,8 @@ function refreshSP(){
     var cat=categories[i];
     var cmeta=catMeta[cat]||{};
     var cemoji=cmeta.emoji||'🏷️';
-    h2+='<div class="sp-item">'+
-      '<div class="sort-btns">'+
-        '<button class="sort-b" onclick="moveItem(\'cat\','+i+',-1)" '+(i===0?'disabled':'')+'>▲</button>'+
-        '<button class="sort-b" onclick="moveItem(\'cat\','+i+',1)" '+(i===categories.length-1?'disabled':'')+'>▼</button>'+
-      '</div>'+
+    h2+='<div class="sp-item" data-type="cat" data-idx="'+i+'">'+
+      '<span class="drag-handle" onmousedown="startDrag(event,\'cat\','+i+')" ontouchstart="startDrag(event,\'cat\','+i+')">☰</span>'+
       '<div class="loc-emoji-disp" onclick="openCatEmoji('+i+')">'+cemoji+'</div>'+
       '<div class="sp-item-txt">'+cat+'</div>'+
       '<button class="edt-b" onclick="startTag(\'cat\','+i+')">✏️</button>'+
@@ -1155,14 +1163,68 @@ function refreshSP(){
   ce.innerHTML=h2;
 }
 
-// ── Sort up/down (works on mobile & desktop) ──
-function moveItem(type,idx,dir){
-  var arr=type==='loc'?locations:categories;
-  var newIdx=idx+dir;
-  if(newIdx<0||newIdx>=arr.length)return;
-  var tmp=arr[idx];arr[idx]=arr[newIdx];arr[newIdx]=tmp;
-  saveData();refreshSP();
+// ── Touch + Mouse drag sort (works on mobile & desktop) ──
+var _drag={type:'',srcIdx:-1,el:null,ghost:null,startY:0,lastTarget:null};
+
+function startDrag(e,type,idx){
+  e.preventDefault();
+  _drag.type=type;_drag.srcIdx=idx;
+  var items_=type==='loc'?locList_els():catList_els();
+  _drag.el=items_[idx];
+  _drag.el.classList.add('dragging');
+  var clientY=e.touches?e.touches[0].clientY:e.clientY;
+  _drag.startY=clientY;
+
+  function onMove(ev){
+    var cy=ev.touches?ev.touches[0].clientY:ev.clientY;
+    // Find which item we're over
+    var allEls=type==='loc'?locList_els():catList_els();
+    var overIdx=-1;
+    for(var i=0;i<allEls.length;i++){
+      var r=allEls[i].getBoundingClientRect();
+      if(cy>=r.top&&cy<=r.bottom){overIdx=i;break;}
+    }
+    // Clear highlights
+    for(var i=0;i<allEls.length;i++){allEls[i].classList.remove('drag-over-top','drag-over-bot');}
+    if(overIdx>-1&&overIdx!==_drag.srcIdx){
+      var r=allEls[overIdx].getBoundingClientRect();
+      var mid=r.top+r.height/2;
+      allEls[overIdx].classList.add(cy<mid?'drag-over-top':'drag-over-bot');
+    }
+  }
+
+  function onEnd(ev){
+    var cy=(ev.changedTouches?ev.changedTouches[0].clientY:ev.clientY)||_drag.startY;
+    var allEls=type==='loc'?locList_els():catList_els();
+    var overIdx=-1;
+    for(var i=0;i<allEls.length;i++){
+      var r=allEls[i].getBoundingClientRect();
+      if(cy>=r.top&&cy<=r.bottom){overIdx=i;break;}
+    }
+    // Clear
+    for(var i=0;i<allEls.length;i++){allEls[i].classList.remove('drag-over-top','drag-over-bot','dragging');}
+    if(overIdx>-1&&overIdx!==_drag.srcIdx){
+      var arr=type==='loc'?locations:categories;
+      var r2=allEls[overIdx].getBoundingClientRect();
+      var insertAfter=cy>(r2.top+r2.height/2);
+      var moved=arr.splice(_drag.srcIdx,1)[0];
+      var newIdx=overIdx>_drag.srcIdx?(insertAfter?overIdx:overIdx-1):(insertAfter?overIdx+1:overIdx);
+      newIdx=Math.max(0,Math.min(arr.length,newIdx));
+      arr.splice(newIdx,0,moved);
+      saveData();refreshSP();
+    }
+    document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onEnd);
+    document.removeEventListener('touchmove',onMove);document.removeEventListener('touchend',onEnd);
+  }
+
+  document.addEventListener('mousemove',onMove,{passive:false});
+  document.addEventListener('mouseup',onEnd);
+  document.addEventListener('touchmove',onMove,{passive:false});
+  document.addEventListener('touchend',onEnd);
 }
+
+function locList_els(){var le=document.getElementById('locList');return le?Array.from(le.querySelectorAll('.sp-item')):[]; }
+function catList_els(){var ce=document.getElementById('catMgmtList');return ce?Array.from(ce.querySelectorAll('.sp-item')):[]; }
 
 // ── Location / Category emoji picker ──
 var editingEmojiType='', editingEmojiIdx=-1;
@@ -1388,10 +1450,8 @@ function initSample(){
 }
 
 // ══ INIT ══
-var urlCode=new URLSearchParams(window.location.search).get('code');
 var savedRoom=localStorage.getItem('inv_last_room');
-var autoRoom=urlCode||savedRoom;
-if(autoRoom){document.getElementById('roomInput').value=autoRoom;roomCode=autoRoom;localStorage.setItem('inv_last_room',autoRoom);enterApp();}
+if(savedRoom){document.getElementById('roomInput').value=savedRoom;roomCode=savedRoom;enterApp();}
 </script>
 </body>
 </html>
