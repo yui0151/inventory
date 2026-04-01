@@ -308,6 +308,20 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.6;}
 .sc{font-size:11px;color:var(--muted);}
 .toast{position:fixed;bottom:86px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--deep);color:var(--cream);padding:10px 20px;border-radius:22px;font-size:13px;opacity:0;transition:all .3s;z-index:700;max-width:92vw;text-align:center;line-height:1.5;box-shadow:0 4px 20px rgba(60,35,15,.28);}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ══ BOTTOM NAV ══ */
+body { padding-bottom: calc(90px + env(safe-area-inset-bottom,0px)); }
+.bottom-nav { position:fixed;bottom:0;left:0;right:0;background:var(--white);border-top:1.5px solid var(--latte);display:none;z-index:300;box-shadow:0 -2px 16px var(--shadow);padding-bottom:env(safe-area-inset-bottom,0px); }
+.bottom-nav.show { display:flex; }
+.bn-item { flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 2px 6px;gap:3px;cursor:pointer;color:var(--muted);border:none;background:none;font-family:'Zen Kaku Gothic New',sans-serif;transition:color .15s; }
+.bn-item.active { color:var(--caramel); }
+.bn-item:active { opacity:.7; }
+.bn-icon { font-size:20px;line-height:1; }
+.bn-label { font-size:9.5px;font-weight:600;line-height:1; }
+/* FAB 上移 */
+.fab { bottom:calc(22px + 68px + env(safe-area-inset-bottom,0px)); }
+/* toast 上移 */
+.toast { bottom:calc(86px + 68px + env(safe-area-inset-bottom,0px)); }
 </style>
 </head>
 <body>
@@ -336,6 +350,7 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.6;}
 <div class="header" id="mainApp" style="display:none">
   <div class="header-top">
     <div class="logo">🐰 庫存小管家 <span class="sync-dot off" id="syncDot"></span></div>
+    <button class="icon-btn" onclick="goApp('home')" style="font-size:14px;">🏠</button>
     <button class="icon-btn" onclick="openSP()">⚙️</button>
   </div>
   <div class="search-wrap">
@@ -583,6 +598,15 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.6;}
   </div>
 </div>
 
+<nav class="bottom-nav" id="bottomNav">
+  <button class="bn-item" onclick="goApp('home')"><span class="bn-icon">🏠</span><span class="bn-label">首頁</span></button>
+  <button class="bn-item" onclick="goApp('sec')"><span class="bn-icon">🐧</span><span class="bn-label">家務</span></button>
+  <button class="bn-item active"><span class="bn-icon">🐰</span><span class="bn-label">庫存</span></button>
+  <button class="bn-item" onclick="goApp('ward')"><span class="bn-icon">👗</span><span class="bn-label">衣櫃</span></button>
+  <button class="bn-item" onclick="goApp('wiki')"><span class="bn-icon">📖</span><span class="bn-label">百科</span></button>
+  <button class="bn-item" onclick="goApp('pocket')"><span class="bn-icon">🗺️</span><span class="bn-label">地圖</span></button>
+</nav>
+  
 <div class="toast" id="toast"></div>
 <input type="file" id="fileIn" accept=".json" style="display:none" onchange="importFile(this)">
 
@@ -615,7 +639,18 @@ if(window._fbOnReady) window._fbOnReady();
 
 <script>
 'use strict';
-
+  
+var APP_URLS_INV = {
+  home:'https://yui0151.github.io/home/',
+  sec:'https://yui0151.github.io/secretary/',
+  ward:'https://yui0151.github.io/wardrobe/',
+  pocket:'https://yamap610.github.io/pocket-list/',
+  wiki:'https://yamap610.github.io/mywiki/'
+};
+window.goApp = function(key) {
+  var base = APP_URLS_INV[key]; if (!base) return;
+  window.location.href = base + (roomCode ? '?code=' + roomCode : '');
+};
 // ══ STATE ══
 var items=[], todos=[], locations=[], categories=[], customEmojis=[], locPhotos={}, locMeta={}, catMeta={};
 var selectedEmoji='📦', editId=null;
@@ -1460,7 +1495,8 @@ function enterApp(){
 
 function showApp(){
   document.getElementById('loginScreen').style.display='none';
-  document.getElementById('mainApp').style.display='';
+  document.getElementById('mainApp').style.display='block';
+  document.getElementById('bottomNav').classList.add('show');
   document.getElementById('catBar').style.display='';
   document.getElementById('tabsBar').style.display='';
   document.getElementById('page-inv').style.display='';
