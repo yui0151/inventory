@@ -733,8 +733,14 @@ function startFirebaseSync(){
       pushData();
       setSyncDot('on');
     }
-    renderAll();
-    renderGreeting();
+      renderAll();
+      renderGreeting();
+  // 任務3: 預設顯示待買清單
+  setTimeout(function(){
+    var tabs = document.querySelectorAll('#tabsBar .tab');
+    if(tabs.length >= 1) switchTab('shop', tabs[0]);
+  }, 100);
+}
   }).catch(function(){ setSyncDot('err'); });
   // Then listen for real-time changes
   unsubscribe = window._fbListen(roomCode, function(data){
