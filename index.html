@@ -14,7 +14,7 @@
   --cocoa:#7a5230;--cocoa-light:#ede0d4;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Zen Kaku Gothic New',sans-serif;background:var(--milk);color:var(--text);min-height:100vh;padding-bottom:84px;}
+body{font-family:'Zen Kaku Gothic New',sans-serif;background:var(--milk);color:var(--text);min-height:100vh;padding-bottom:calc(68px + env(safe-area-inset-bottom,0px));}
 
 /* LOGIN */
 #loginScreen{position:fixed;inset:0;background:var(--milk);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;}
@@ -310,18 +310,18 @@ textarea.fi{resize:vertical;min-height:80px;line-height:1.6;}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
 /* ══ BOTTOM NAV ══ */
-body { padding-bottom: calc(90px + env(safe-area-inset-bottom,0px)); }
-.bottom-nav { position:fixed;bottom:0;left:0;right:0;background:var(--white);border-top:1.5px solid var(--latte);display:none;z-index:300;box-shadow:0 -2px 16px var(--shadow);padding-bottom:env(safe-area-inset-bottom,0px); }
+body { padding-bottom: calc(68px + env(safe-area-inset-bottom,0px)); }
+.bottom-nav { position:fixed;bottom:0;left:0;right:0;background:var(--white);border-top:1.5px solid var(--latte);display:none;z-index:500;box-shadow:0 -2px 16px var(--shadow);padding-bottom:env(safe-area-inset-bottom,0px); }
 .bottom-nav.show { display:flex; }
-.bn-item { flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 2px 6px;gap:3px;cursor:pointer;color:var(--muted);border:none;background:none;font-family:'Zen Kaku Gothic New',sans-serif;transition:color .15s; }
+.bn-item { flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 2px 6px;gap:3px;cursor:pointer;color:var(--muted);border:none;background:none;font-family:'Zen Kaku Gothic New',sans-serif;transition:color .15s;-webkit-tap-highlight-color:transparent; }
 .bn-item.active { color:var(--caramel); }
 .bn-item:active { opacity:.7; }
 .bn-icon { font-size:20px;line-height:1; }
 .bn-label { font-size:9.5px;font-weight:600;line-height:1; }
-/* FAB 上移 */
-.fab { bottom:calc(22px + 68px + env(safe-area-inset-bottom,0px)); }
+/* FAB 上移到 tab bar 上方 */
+.fab { bottom:calc(76px + env(safe-area-inset-bottom,0px)); }
 /* toast 上移 */
-.toast { bottom:calc(86px + 68px + env(safe-area-inset-bottom,0px)); }
+.toast { bottom:calc(80px + env(safe-area-inset-bottom,0px)); }
 </style>
 </head>
 <body>
@@ -625,7 +625,6 @@ const firebaseApp = initializeApp({
 const db = getFirestore(firebaseApp);
 
 // Expose Firebase functions to global scope for use by main script
-window._fbReady = true;
 window._fbGetDoc  = function(code){ return getDoc(doc(db,'inventory',code)); };
 window._fbSetDoc  = function(code,data){ return setDoc(doc(db,'inventory',code), data); };
 window._fbListen  = function(code, cb){
@@ -633,8 +632,12 @@ window._fbListen  = function(code, cb){
     if(snap.exists()) cb(snap.data());
   });
 };
-// Signal that Firebase is ready
-if(window._fbOnReady) window._fbOnReady();
+// Signal that Firebase is ready after main script has loaded
+setTimeout(function(){
+  window._fbReady = true;
+  if(window._fbOnReady) window._fbOnReady();
+  if(window._pendingEnter){ window._pendingEnter(); window._pendingEnter=null; }
+}, 0);
 </script>
 
 <script>
@@ -733,14 +736,8 @@ function startFirebaseSync(){
       pushData();
       setSyncDot('on');
     }
-      renderAll();
-      renderGreeting();
-  // 任務3: 預設顯示待買清單
-  setTimeout(function(){
-    var tabs = document.querySelectorAll('#tabsBar .tab');
-    if(tabs.length >= 1) switchTab('shop', tabs[0]);
-  }, 100);
-}
+    renderAll();
+    renderGreeting();
   }).catch(function(){ setSyncDot('err'); });
   // Then listen for real-time changes
   unsubscribe = window._fbListen(roomCode, function(data){
@@ -1557,8 +1554,18 @@ function initSample(){
 }
 
 // ══ INIT ══
+// 暴露 doLogin 到全域，修正 onclick 找不到函式的 bug
+window.doLogin = doLogin;
+window.doLogout = doLogout;
+
 var savedRoom=localStorage.getItem('inv_last_room');
-if(savedRoom){document.getElementById('roomInput').value=savedRoom;roomCode=savedRoom;enterApp();}
+if(savedRoom){
+  // 先設定 roomCode，等 Firebase 就緒後再 enterApp，避免重複要求輸入
+  document.getElementById('roomInput').value=savedRoom;
+  roomCode=savedRoom;
+  if(window._fbReady){ enterApp(); }
+  else { window._pendingEnter = function(){ enterApp(); }; }
+}
 </script>
 </body>
 </html>
