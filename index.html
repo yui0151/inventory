@@ -1502,6 +1502,10 @@ function enterApp(){
 function showApp(){
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('mainApp').style.display='block';
+  ['catBar','tabsBar','fabBtn'].forEach(function(id){
+  var el=document.getElementById(id);
+  if(el) el.style.display=(id==='fabBtn'?'flex':'flex');
+});
   document.getElementById('bottomNav').classList.add('show');
   document.getElementById('catBar').style.display='';
   document.getElementById('tabsBar').style.display='';
