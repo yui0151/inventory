@@ -14,7 +14,7 @@
   --cocoa:#7a5230;--cocoa-light:#ede0d4;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Zen Kaku Gothic New',sans-serif;background:var(--milk);color:var(--text);min-height:100vh;padding-bottom:90px;}
+body{font-family:'Zen Kaku Gothic New',sans-serif;background:var(--milk);color:var(--text);min-height:100vh;padding-bottom:84px;}
 
 /* LOGIN */
 #loginScreen{position:fixed;inset:0;background:var(--milk);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;}
@@ -364,8 +364,8 @@ body { padding-bottom: calc(90px + env(safe-area-inset-bottom,0px)); }
 
 <!-- TABS -->
 <div class="tabs" id="tabsBar" style="display:none">
-  <button class="tab active" onclick="switchTab('inv',this)">📦 庫存 <span class="tab-badge" id="inv-cnt">0</span></button>
-  <button class="tab" onclick="switchTab('shop',this)">🛒 待買清單 <span class="tab-badge" id="shop-cnt">0</span></button>
+  <button class="tab active" onclick="switchTab('shop',this)">🛒 待買清單 <span class="tab-badge" id="shop-cnt">0</span></button>
+  <button class="tab" onclick="switchTab('inv',this)">📦 庫存 <span class="tab-badge" id="inv-cnt">0</span></button>
 </div>
 
 <!-- BATCH BAR -->
