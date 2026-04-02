@@ -1499,15 +1499,13 @@ function enterApp(){
 function showApp(){
   document.getElementById('loginScreen').style.display='none';
   document.getElementById('mainApp').style.display='block';
-  ['catBar','tabsBar','fabBtn'].forEach(function(id){
-  var el=document.getElementById(id);
-  if(el) el.style.display=(id==='fabBtn'?'flex':'flex');
-});
   document.getElementById('bottomNav').classList.add('show');
   document.getElementById('catBar').style.display='';
   document.getElementById('tabsBar').style.display='';
-  document.getElementById('page-inv').style.display='';
   document.getElementById('fabBtn').style.display='';
+  // 預設顯示「待買清單」tab
+  var shopTab = document.querySelector('#tabsBar .tab');
+  if(shopTab) switchTab('shop', shopTab);
 }
 
 // ══ SAMPLE / BULK DATA ══
